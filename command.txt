@@ -1,0 +1,105 @@
+Remember:
+1. Have the screencast and store the FPV video
+2. Set the webcam
+3. Set the camera for hand
+4. Set the camera to follow the drone
+
+
+
+Installation:
+1. olympe for control at https://developer.parrot.com/docs/olympe/userguide.html#create-a-simulated-drone
+2. pyparrot for FPV live stream at https://pyparrot.readthedocs.io/en/latest/installation.html  !!! must Installing From Source to avoid error
+
+
+Attentions:
+1. PyQt5:  sudo apt-get install python3-pyqt5 python-pyqt5     pip3 install pyqt5
+2. VLC: sudo apt-get install vlc
+
+
+Command:
+1. find the recorded mp4 file: nautilus /tmp/olympe_streaming_test_d1y0jn00
+2. open virtual env:  source ./products/olympe/linux/env/shell
+
+
+Usage:
+Opening two terminal, the first one run video_control.py, then quickly run steamingGUI.py on the other terminal.
+Simulation IP address: "10.202.0.1"
+Physic drone IP address: "192.168.42.1"
+
+Sphinx usage: 
+sudo systemctl start firmwared
+sudo sphinx /opt/parrot-sphinx/usr/share/sphinx/drones/anafi4k.drone::stolen_interface=::simple_front_cam=true
+
+
+Note:
+1. >10s no timeout
+2. 'StreamingExample' object has no attribute 'current_frame': check whether you ban the recording
+3. cannot control the drone after first checkpoint: in the keyboard_ctrl.py, once touch Key.esc, the Listener will be destroied but you want to use the same Listener in next while loop: Change the while condition to Key.enter or reclaim the Listener after each while loop
+4. The pilot command cannot follow the input control list: double check it maybe correct since adding noise will change the type of control
+5. The number of images in the folder is larger than the length of ctrl_seq.txt: Not delete the previous train_data folder
+6. The turning speed or flying speed would influence the flytimestamp
+7. The img_diff should be tested first with normal image
+8. Using sift features: install opencv 
+pip3 install opencv-python==3.4.2.16
+pip3 install opencv-contrib-python==3.4.2.16
+9. The GPS module of Anafi: https://parrotpilots.com/threads/gps-accuracy.1398/ Accuracy is 3 meters
+10. Cannot change the streaming video resultion it is fixed to 1280*720p: https://github.com/Parrot-Developers/olympe/issues/11   https://forum.developer.parrot.com/t/anafi-camera-fov-and-resolution/10339
+
+!!!! when collect_data: the resolution is 0.75 and the magnitude of control is 10
+ 
+Helpful website:
+1. use  olympe.Drone.piloting_pcmd to pilot the drone with duration control
+https://forum.developer.parrot.com/t/work-with-ardrone3-piloting-pcmd/10186
+
+
+
+control setting:
+1. when adding noises, the magnitude and the duration can both change
+2. How to associate control commands with correponding image frames? Use the class itself to store the current frame to self.current_frame and save it when execute the fly_ep() thread. Ideally it won't not influence the thread for live streaming
+
+Question:
+1. is there anyway to avoid create many list to store variables?
+2. The speed is slow when applying the control for collect training data, actual flytimestamp may lower than 0.02 but cannot know
+
+
+Metadata:
+struct metadata_v3_base
+{
+    uint16_t id;                   /* Identifier = 0x5033 */
+    uint16_t length;               /* Structure size in 32 bits words excluding the id and length
+                                    * fields and including extensions */
+    int32_t  ground_distance;      /* Best ground distance estimation (m), Q16.16 */
+    int32_t  latitude;             /* Absolute latitude (deg), Q10.22 */
+    int32_t  longitude;            /* Absolute longitude (deg), Q10.22 */
+    int32_t  altitude_and_sv;      /* Bits 31..8 = altitude (m) Q16.8, bits 7..0 = GPS SV count */
+    int16_t  north_speed;          /* North speed (m/s), Q8.8 */
+    int16_t  east_speed;           /* East speed (m/s), Q8.8 */
+    int16_t  down_speed;           /* Down speed (m/s), Q8.8 */
+    int16_t  air_speed;            /* Speed relative to air (m/s), negative means no data, Q8.8 */
+    int16_t  drone_w;              /* Drone quaternion W, Q2.14 */
+    int16_t  drone_x;              /* Drone quaternion X, Q2.14 */
+    int16_t  drone_y;              /* Drone quaternion Y, Q2.14 */
+    int16_t  drone_z;              /* Drone quaternion Z, Q2.14 */
+    int16_t  frame_base_w;         /* Frame base view quaternion W (without pan/tilt), Q2.14 */
+    int16_t  frame_base_x;         /* Frame base view quaternion X (without pan/tilt), Q2.14 */
+    int16_t  frame_base_y;         /* Frame base view quaternion Y (without pan/tilt), Q2.14 */
+    int16_t  frame_base_z;         /* Frame base view quaternion Z (without pan/tilt), Q2.14 */
+    int16_t  frame_w;              /* Frame view quaternion W, Q2.14 */
+    int16_t  frame_x;              /* Frame view quaternion X, Q2.14 */
+    int16_t  frame_y;              /* Frame view quaternion Y, Q2.14 */
+    int16_t  frame_z;              /* Frame view quaternion Z, Q2.14 */
+    uint16_t exposure_time;        /* Frame exposure time (ms), Q8.8 */
+    uint16_t gain;                 /* Frame ISO gain */
+    uint16_t awb_r_gain;           /* White balance R/G gain, Q2.14 */
+    uint16_t awb_b_gain;           /* White balance B/G gain, Q2.14 */
+    uint16_t picture_hfov;         /* Picture horizontal FOV (deg), Q8.8 */
+    uint16_t picture_vfov;         /* Picture vertical FOV (deg), Q8.8 */
+    uint32_t link_quality;         /* Bits 31..8 = link goodput (kbit/s),
+                                    * bits 7..0 = link quality (0-5) */
+    int8_t   wifi_rssi;            /* Wifi RSSI (dBm) */
+    uint8_t  battery_percentage;   /* Battery charge percentage */
+    uint8_t  state;                /* Flying state */
+    uint8_t  mode;                 /* Bit 7 = animation, bits 6..0 = pilotingMode */
+};
+
+{'drone_quat': {'w': 0.86297607421875, 'x': 0.000244140625, 'y': 0.00439453125, 'z': 0.50518798828125}, 'location': {}, 'ground_distance': 0.97747802734375, 'speed': {'north': -0.015625, 'east': -0.01171875, 'down': 0}, 'air_speed': -1, 'frame_base_quat': {'w': 0.86309814453125, 'x': 0, 'y': 0, 'z': 0.50494384765625}, 'frame_quat': {'w': 0.86309814453125, 'x': 0, 'y': 0, 'z': 0.50494384765625}, 'exposure_time': 19.98828125, 'gain': 419, 'awb_r_gain': 1.890869140625, 'awb_b_gain': 1.87939453125, 'picture_hfov': 69, 'picture_vfov': 42.26953125, 'link_goodput': 18515, 'link_quality': 5, 'wifi_rssi': -52, 'battery_percentage': 96, 'animation': 0, 'state': 'HOVERING', 'mode': 'MANUAL', 'frame_timestamp': 58041116, 'automation': {'framing_target': {}, 'flight_destination': {}, 'followme_enabled': 0, 'lookatme_enabled': 0, 'angle_locked': 0, 'animation': 'NONE'}}
