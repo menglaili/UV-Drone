@@ -141,7 +141,7 @@ class StreamingExample(threading.Thread):
         self.meta_other = {key: yuv_frame.vmeta()[1][key] for key in ['drone_quat', 'ground_distance']}
         # self.meta_other = yuv_frame.vmeta()[1]
         # yuv_frame.vmeta() returns a dictionary that contains additional
-        # metadata from the drone (GPS coordinates, battery percentage, ...)
+        # metadata from the drone (no GPS coordinates(banned), battery percentage, ...)
 
         # convert pdraw YUV flag to OpenCV YUV flag
         cv2_cvt_color_flag = {

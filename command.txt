@@ -45,6 +45,8 @@ pip3 install opencv-contrib-python==3.4.2.16
 9. The GPS module of Anafi: https://parrotpilots.com/threads/gps-accuracy.1398/ Accuracy is 3 meters
 10. Cannot change the streaming video resultion it is fixed to 1280*720p: https://github.com/Parrot-Developers/olympe/issues/11   https://forum.developer.parrot.com/t/anafi-camera-fov-and-resolution/10339
 
+11. Sphinx is not working, reinstall!!
+
 !!!! when collect_data: the resolution is 0.75 and the magnitude of control is 10
  
 Helpful website:
