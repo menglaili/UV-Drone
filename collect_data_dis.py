@@ -57,7 +57,6 @@ def diff(img, meta, des1, exp_meta):
     q_exp = Quaternion(array=np.array(exp_meta[:4]))
     q_diff = q_exp.angle - q_meta.angle   # positive if bias to left, negative if bias to right
 
-
     # height difference
     h_diff = meta[-1] - exp_meta[-1]
     
