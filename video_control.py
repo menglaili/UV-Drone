@@ -31,7 +31,14 @@ from pynput.keyboard import Listener, Key, KeyCode
 
 olympe.log.update_config({"loggers": {"olympe": {"level": "WARNING"}}})
 
-
+def read_meta(metadata):
+    w = metadata['drone_quat']['w']
+    x = metadata['drone_quat']['x']
+    y = metadata['drone_quat']['y']
+    z = metadata['drone_quat']['z']
+    g_d = metadata['ground_distance']
+    exp_meta = [w,x,y,z,g_d]
+    return exp_meta
 
 class StreamingExample(threading.Thread):
 
@@ -188,45 +195,41 @@ class StreamingExample(threading.Thread):
 
     # the one for expert
     def fly_ep(self):
+        cmd_img_dir = os.path.join(self.datafile,'image')
+        cmd_dict_dir = os.path.join(self.datafile,'metadata')
         ctrl_seq = []
         self.drone.start_piloting()
         control = KeyboardCtrl()
         count = 0
-        count_busy = 0  # count when is the mach busy
+        count_pilotcmd = 0
         nowtime = 0
         checkpoint = []
-        dict_list = []
-        img_list = []
         while not control.quit():
             if control.takeoff():
                 self.drone(TakeOff())
             elif control.landing():
                 self.drone(Landing())
-            elif control.has_piloting_cmd() or control.hovering():
-                if control.has_piloting_cmd():
-                    ctrl_seq.append([count, control.roll(), control.pitch(), control.yaw(), control.throttle(), 0])  # 0 stands for not hover
-                    self.drone.piloting_pcmd(control.roll(), control.pitch(), control.yaw(), control.throttle(), self.flytimestamp)
-                else:  # when fly over the area needs to be clean
-                    ctrl_seq.append([count, control.roll(), control.pitch(), control.yaw(), control.throttle(), 1])  # 1 stands for hover
-                    self.drone.piloting_pcmd(0, 0, 0, 0, self.flytimestamp)
-                dict_list.append((count, self.meta_other))
-                img_list.append((count, self.current_frame))
-                count_busy += 1
+            elif control.has_piloting_cmd():
+                count_pilotcmd += 1
+                ctrl_seq.append([count, control.roll(), control.pitch(), control.yaw(), control.throttle()])  # 0 stands for not hover
+                self.drone.piloting_pcmd(control.roll(), control.pitch(), control.yaw(), control.throttle(), self.flytimestamp)
+                count += 1
             elif control.checkpoint():  # the next count number corresponding to the next control command
                 ctime = time.time()
                 if (len(checkpoint) == 0 or checkpoint[-1] != count) and (ctime-nowtime)>1:  # 2 seconds cool down time
                     checkpoint.append(count)
                     nowtime = ctime
+                    meta = read_meta(self.meta_other)
+                    cv2.imwrite(os.path.join(cmd_img_dir, str(count)+'.png'), self.current_frame)
+                    np.savetxt(os.path.join(cmd_dict_dir, str(count)+'.txt'),np.array(meta), fmt='%1.4f', newline='\n')
+                    ctrl_seq.append([count, 0, 0, 0, 0])
+                    count += 1
             else:
                 self.drone.piloting_pcmd(0, 0, 0, 0, self.flytimestamp)
-            count += 1
+                if count_pilotcmd != 0:
+                    ctrl_seq.append([count, 0, 0, 0, 0])
+                    count += 1
             time.sleep(self.flytimestamp)
-        for i in range(count_busy):
-            # save metadata
-            with open(os.path.join(self.datafile, 'metadata', str(dict_list[i][0])+'.pickle'), 'wb') as handle:
-                pickle.dump(dict_list[i][1], handle, protocol=pickle.HIGHEST_PROTOCOL)
-            # save images
-            cv2.imwrite(os.path.join(self.datafile,'image', str(img_list[i][0])+'.png'), img_list[i][1])
         np.savetxt(os.path.join(self.datafile, 'ctrl_seq.txt'),np.array(ctrl_seq), fmt='%d', newline='\n')
         np.savetxt(os.path.join(self.datafile, 'checkpoint.txt'), np.array(checkpoint), fmt='%d')
 
@@ -344,7 +347,7 @@ if __name__ == "__main__":
         # Start the video stream
         streaming_example.start()
         # Perform some live video processing while the drone is flying
-        streaming_example.hang() # streaming_example.fly() # streaming_example.hang()# 
+        streaming_example.fly_ep() # streaming_example.fly() # streaming_example.hang()# 
         # Stop the video stream
         streaming_example.stop()
         # Recorded video stream postprocessing

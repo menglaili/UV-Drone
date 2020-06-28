@@ -129,7 +129,7 @@ class KeyboardCtrl(Listener):
         return self._key_pressed[self._ctrl_keys[Ctrl.QUIT]]
 
     def _axis(self, left_key, right_key):  # control the speed of moving  [-100,100]
-        return 10 * (
+        return 30 * (
             int(self._key_pressed[right_key]) - int(self._key_pressed[left_key])
         )
 

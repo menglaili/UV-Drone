@@ -20,12 +20,12 @@ Data_output = './train_data'
 Correctimestamp = 0.02
 image_difference_threshold = 0.70
 orient_difference_threshold = 0.005
-height_difference_threshold = 0.01
-Maximum_displacement_error = 0.4 # 0.3m for dx, dy, dz error drifting
+height_difference_threshold = 0.015
+Maximum_displacement_error = 0.45 # 0.3m for dx, dy, dz error drifting
 Maximum_rotation_error = math.radians(30)
 Random_command_num = 10
-Command_order = [2,-2,1,-1,3,-3,4,-4]  # relationship between the random input and Moveby command position
-Command_filename = ['leftward','rightward','forward','backward','up','down','turnleft','turnright']
+Command_order = [2,-2,4,-4,3,-3,1,-1]  # the command for creating error # relationship between the random input and Moveby command position
+Command_filename = ['leftward','rightward','turnleft','turnright','up','down','forward','backward'] # !!! this is the correction operation not the operation creating error
 
 # take off
 
@@ -95,7 +95,7 @@ def fly(drone, streaming_example):
     drone.connection()
     drone.start_piloting()
     control = KeyboardCtrl()
-    count = -1  # count for scenes or location point in the room
+    count = 1  # count for scenes or location point in the room
     while not control.quit():
         count += 1 # num of trajectory recorded
         # create new directory
@@ -115,28 +115,37 @@ def fly(drone, streaming_example):
                 break
         
         corr_count = -1
-        # generate random control command 0-5 is translation, 6-7 is rotation
-        command_mat = np.zeros((8, Random_command_num))
-        for i in range(6):
-            random_distance = np.arange(10,int(Maximum_displacement_error*100)+1)
-            np.random.seed(i)
-            command_mat[i,:] = random_distance[np.random.permutation(random_distance.shape[0])[:10]]/100
-        for i in range(6,8):
-            command_mat[i,:] = np.arange(Maximum_rotation_error/10, 1.09*Maximum_rotation_error, Maximum_rotation_error/10)
-        np.savetxt(os.path.join(ctrl_dir, 'random_ctrl_command.txt'), command_mat, fmt='%1.3f')
+        command_mat_dir = os.path.join(ctrl_dir, 'random_ctrl_command.txt')
+        if os.path.isfile(command_mat_dir):
+            command_mat = np.loadtxt(command_mat_dir)
+        else:
+            # generate random control command 0-5 is translation, 6-7 is rotation
+            command_mat = np.zeros((8, Random_command_num))
+            for i in range(6):
+                random_distance = np.arange(15,int(Maximum_displacement_error*100)+1)
+                command_mat[i,:] = random_distance[np.random.permutation(random_distance.shape[0])[:10]]/100
+            for i in range(2,4):
+                command_mat[i,:] = np.arange(Maximum_rotation_error/10, 1.09*Maximum_rotation_error, Maximum_rotation_error/10)
+            for i in range(6,8):
+                random_distance = np.arange(15,int(Maximum_displacement_error*100)+1)
+                command_mat[i,:] = random_distance[np.random.permutation(random_distance.shape[0])[:10]]/100
+            np.savetxt(os.path.join(ctrl_dir, 'random_ctrl_command.txt'), command_mat, fmt='%1.3f')
         # execute the command
-        for i in range(8):
+        for i in range(0, 6):
             # create the file for saving
             cmd_img_dir = os.path.join(img_dir, Command_filename[i])
             cmd_dict_dir = os.path.join(dict_dir, Command_filename[i])
             cmd_ctrl_dir = os.path.join(ctrl_dir, Command_filename[i])
             create_dir([cmd_img_dir, cmd_dict_dir, cmd_ctrl_dir])
+            corr_count = -1
 
             command_pos = Command_order[i]
             for j in range(Random_command_num):
                 while True:
                     if control.takeoff():
                         drone(TakeOff(_no_expect=True) & FlyingStateChanged(state="hovering", _policy="wait", _timeout=5)).wait()
+                    elif control.landing():
+                        drone(Landing() >> FlyingStateChanged(state="landed", _timeout=5)).wait()
                     elif control.wait():
                         command_moveby = [0,0,0,0]
                         if command_pos > 0:
@@ -164,8 +173,10 @@ def fly(drone, streaming_example):
                 while True:
                     if control.break_loop():
                         print("Finish correction")
+                        cv2.imwrite(os.path.join(cmd_img_dir, str(corr_count)+'after_cor.png'), img)
+                        np.savetxt(os.path.join(cmd_dict_dir, str(corr_count)+'after_cor.txt'),np.array(meta), fmt='%1.4f', newline='\n')
                         break
-                    if control.has_piloting_cmd():   # correction
+                    elif control.has_piloting_cmd():   # correction
                         img = streaming_example.current_frame
                         meta = read_meta(streaming_example.meta_other)
                         data_diff = diff(img, meta, des1, meta_exp)

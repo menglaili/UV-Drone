@@ -28,7 +28,19 @@ Physic drone IP address: "192.168.42.1"
 
 Sphinx usage: 
 sudo systemctl start firmwared
+When firmware cannot connect using fdc: sudo systemctl restart firmwared.service
 sudo sphinx /opt/parrot-sphinx/usr/share/sphinx/drones/anafi4k.drone::stolen_interface=::simple_front_cam=true
+sudo sphinx /opt/parrot-sphinx/usr/share/sphinx/drones/anafi4k.drone::stolen_interface=wlp4s0:eth0:192.168.42.1/24
+Fix wlp4so: add a new rule file using 
+    sudo -i
+    echo SUBSYSTEM=="net", ACTION=="add", ATTR{address}=="<Wifi_card_MAC>", NAME="wlp4so" > /etc/udev/rules.d/70-persistent-net.rules
+Delete the rule file: rm -rf /etc/udev/rules.d/70-persistent-net.rules
+
+The reason why sphinx cannot start is because the interface wlp4so after regenerate the world it will disappear in iwconfig, need to restart the computer
+
+
+
+
 
 
 Note:
@@ -45,7 +57,10 @@ pip3 install opencv-contrib-python==3.4.2.16
 9. The GPS module of Anafi: https://parrotpilots.com/threads/gps-accuracy.1398/ Accuracy is 3 meters
 10. Cannot change the streaming video resultion it is fixed to 1280*720p: https://github.com/Parrot-Developers/olympe/issues/11   https://forum.developer.parrot.com/t/anafi-camera-fov-and-resolution/10339
 
-11. Sphinx is not working, reinstall!!
+11. lua torch is learned here: https://github.com/soumith/cvpr2015/blob/master/Deep%20Learning%20with%20Torch.ipynb
+
+11. Sphinx is not working, reinstall!!  
+
 
 !!!! when collect_data: the resolution is 0.75 and the magnitude of control is 10
  
