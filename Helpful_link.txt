@@ -1,0 +1,33 @@
+
+Installation:
+1. Olympe: for control at https://developer.parrot.com/docs/olympe/userguide.html#create-a-simulated-drone
+2. pyparrot for FPV live stream at https://pyparrot.readthedocs.io/en/latest/installation.html
+must Installing From Source to avoid error
+3. PyQt5:  sudo apt-get install python3-pyqt5 python-pyqt5     pip3 install pyqt5
+4. VLC: sudo apt-get install vlc
+
+
+Command for starting olympe:
+1. find the recorded mp4 file: nautilus /tmp/olympe_streaming_test_d1y0jn00
+2. open virtual env:  source ./products/olympe/linux/env/shell
+3. use  olympe.Drone.piloting_pcmd to pilot the drone with duration control
+https://forum.developer.parrot.com/t/work-with-ardrone3-piloting-pcmd/10186
+
+
+
+Sphinx usage: 
+sudo systemctl start firmwared
+When firmware cannot connect using fdc: sudo systemctl restart firmwared.service
+sudo sphinx /opt/parrot-sphinx/usr/share/sphinx/drones/anafi4k.drone::stolen_interface=::simple_front_cam=true
+sudo sphinx /opt/parrot-sphinx/usr/share/sphinx/drones/anafi4k.drone::stolen_interface=wlp4s0:eth0:192.168.42.1/24  wlp4s0 can be changed to wlan0 see iwconfig for your interface
+The reason why sphinx cannot start is because the interface wlp4so after regenerate the world it will disappear in iwconfig, need to restart the computer
+
+
+Navida GPU checking
+1. nvidia-smi check the usage of GPU
+2. nvcc --version check the version of navida toolkit version
+3. Install cudnn when cannot detect this file, export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda/lib64
+
+
+Question:
+1. The speed is slow when applying the control for collect training data, actual flytimestamp may lower than 0.02 but cannot know
