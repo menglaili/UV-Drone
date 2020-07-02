@@ -41,14 +41,15 @@ Run the following command at the Olympe's virtualenv.
 
 `
 python3 keyboard_ctrl.py
-`<br>
+`
+
 
 **Controlling commands:**
 - `w`: Go forward; `s`: Go backward; `a`: Go leftward; `d`: Go rightward
 - ↑: Go up; ↓: Go down; ←: Turn left; →: Turn right
 - `t`: Take off; `l`: Landing; `q`: Quit
 
-Once button for one piloting command is pressed, the command will be execute before you unpress it. It's a time control manner same as using joystick. To make the drone stop immediately when no button is pressed, the responding time for each command is set to 0.02s i.e. the command will execute for 0.02s then check whether there is still piloting button pressed otherwise hovering. The roll angle, pitch angle, yaw rotation speed, and throttle when moving are set to 30% of their maximum values.
+It's a time control manner same as using joystick. The responding time for each command is set to 0.02s i.e. the command will execute for 0.02s then check. The roll angle, pitch angle, yaw rotation speed, and throttle when moving are set to 30% of their maximum values.
 
 ## Record the reference path
 
