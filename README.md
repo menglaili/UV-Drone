@@ -13,9 +13,9 @@ Please pay attention that the olympe is running in a virtualenv and all the pack
 ## Other requirements
 Run the following code to install all dependent packages:
 
-`
+```
 pip3 install -r requirements.txt --no-index --find-links file:///tmp/packages
-`
+```
 ## Sphinx
 Installation and usages can be find [here](https://developer.parrot.com/docs/sphinx/installation.html). This is the parrot drone official simulation environment. For the safty purpose please run the code at least once at this environment before deploy it to the physical one. 
 
@@ -29,7 +29,7 @@ For the physical one:
 ```
 if __name__ == "__main__":
     with olympe.Drone("192.168.42.1") as drone:
-````
+```
 
 For the simulated one:
 ```
@@ -39,9 +39,9 @@ if __name__ == "__main__":
 ## Control the drone by keyboard
 Run the following command at the Olympe's virtualenv. 
 
-`
+```
 python3 keyboard_ctrl.py
-`
+```
 
 
 **Controlling commands:**
