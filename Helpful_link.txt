@@ -28,6 +28,3 @@ Navida GPU checking
 2. nvcc --version check the version of navida toolkit version
 3. Install cudnn when cannot detect this file, export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda/lib64
 
-
-Question:
-1. The speed is slow when applying the control for collect training data, actual flytimestamp may lower than 0.02 but cannot know
