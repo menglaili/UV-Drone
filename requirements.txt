@@ -1,5 +1,4 @@
 pynput
-cv2
+opencv-python
 numpy
-csv
 pyquaternion
