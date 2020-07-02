@@ -204,6 +204,8 @@ class StreamingExample(threading.Thread):
         count_pilotcmd = 0
         nowtime = 0
         checkpoint = []
+        print("Ready for record the reference path")
+        print("press 't' to Take off, press space to record the checkpoint, press piloting command to fly the drone")
         while not control.quit():
             if control.takeoff():
                 self.drone(TakeOff())
