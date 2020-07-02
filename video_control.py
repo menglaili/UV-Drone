@@ -217,6 +217,7 @@ class StreamingExample(threading.Thread):
             elif control.checkpoint():  # the next count number corresponding to the next control command
                 ctime = time.time()
                 if (len(checkpoint) == 0 or checkpoint[-1] != count) and (ctime-nowtime)>1:  # 2 seconds cool down time
+                    print("Store the checkpoint at this place")
                     checkpoint.append(count)
                     nowtime = ctime
                     meta = read_meta(self.meta_other)
