@@ -104,7 +104,7 @@ When the screen shows the FPV camera frame on a new window and the command line 
 
 The observation difference is **[Image matching ratio, orientation error, height error]**. The threshold is set to be **[0.70, 0.005, 0.015]**.
 
-The control command is **[roll, pitch, yaw, throttle]**. 
+The next control command has the format **[roll, pitch, yaw, throttle]**. 
 
 **Emergency**
 - when wanting the drone to land immediately, please press `Ctrl-C` to shut down the program and run `python3 keyboard_ctrl.py` then press `l`.
