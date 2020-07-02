@@ -338,12 +338,8 @@ class StreamingExample(threading.Thread):
 
 
 if __name__ == "__main__":
-    path = [(3.8, 0),(1.5, -60), (0.7, 0), (5, -95),(2.14, -80)]  #,(0, 90, 1.2), (0, 90), (0, 90), (0, 90, -0.7), 
-    # path = [(0.5, 0), (0.5, 180)]
     with olympe.Drone("192.168.42.1") as drone:
         streaming_example = StreamingExample(drone, True, path)
-        streaming_example.dis2pair()
-        # print(streaming_example.path)
         # Start the video stream
         streaming_example.start()
         # Perform some live video processing while the drone is flying
@@ -352,11 +348,3 @@ if __name__ == "__main__":
         streaming_example.stop()
         # Recorded video stream postprocessing
         streaming_example.postprocessing()
-
-
-
-'''
-# Load data (deserialize)
-with open(os.path.join('./data/metadata', str(num)+'.pickle'), 'rb') as handle:
-    data = pickle.load(handle)
-'''
