@@ -42,7 +42,8 @@ Run the following command at the Olympe's virtualenv.
 `
 python3 keyboard_ctrl.py
 `
-
+<br />
+<br />
 **Controlling commands:**
 - `w`: Go forward; `s`: Go backward; `a`: Go leftward; `d`: Go rightward
 - ↑: Go up; ↓: Go down; ←: Turn left; →: Turn right
