@@ -10,8 +10,9 @@ Installation and tutorials can be find [here](https://developer.parrot.com/docs/
 
 ## Other requirements
 Run the following code to install all dependent packages:
-'
+
+`
 pip3 install -r requirements.txt --no-index --find-links file:///tmp/packages
-'
+`
 
 # 2. Usage
