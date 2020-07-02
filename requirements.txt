@@ -1,0 +1,5 @@
+pynput
+cv2
+numpy
+csv
+pyquaternion
