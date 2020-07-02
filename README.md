@@ -61,10 +61,10 @@ python3 video_control.py
 When the screen shows the FPV camera frame on a new window and the command line prints *Ready for record the reference path*, it ready to start.
 
 - Press `t` to take off
-- Give some piloting commands e.g. `w``w``a`
-- Press *space* to select the first checkpoint
+- Give some piloting commands e.g. `w w a`
+- Press `*space*` to select the first checkpoint
 - Give some piloting commands
-- Press *space* to select the second checkpoint
+- Press `*space*` to select the second checkpoint
 - ...
 - Press `l` to land
 - Press `q` to quit the program
@@ -92,12 +92,12 @@ When the screen shows the FPV camera frame on a new window and the command line 
 - "The next control command is: [30, 0, 0, 0]"        # the drone follows this command and fly
 - "The different of observation at this checkpoint before correction: [0.6634, 0.003, 0.015]"     # the drone flys at the checkpoint, shows the difference
 - "Need corrections. Corrections begin"  # if "No need corrections. Continue for the next checkpoint" then no corrections are needed
-- Give some correction piloting commands
+- Give some correction piloting commands e.g. `w w a`
 - "The difference of observation is: [0.67, 0.002, 0.016]"
 - Give some correction piloting commands
 - "The different of observation is: [0.68, 0.001, 0.013]"
 - ...
-- "Finish correction" or if you cannot reach the threshold anyway, press *Enter* to finish the correction
+- "Finish correction" or if you cannot reach the threshold anyway, press `*Enter*` to finish the correction
 - "Landing for next round of correction" if finish all the checkpoint at this round
 - One more round ...
 
