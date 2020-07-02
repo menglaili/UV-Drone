@@ -42,10 +42,11 @@ Run the following command at the Olympe's virtualenv.
 `
 python3 keyboard_ctrl.py
 `
-The controlling button are:
-`w`: Go forward; `s`: Go backward; `a`: Go leftward; `d`: Go rightward
-↑: Go up; ↓: Go down; ←: Turn left; →: Turn right
-`t`: Take off; `l`: Landing; `q`: Quit
+
+**Controlling commands:**
+- `w`: Go forward; `s`: Go backward; `a`: Go leftward; `d`: Go rightward
+- ↑: Go up; ↓: Go down; ←: Turn left; →: Turn right
+- `t`: Take off; `l`: Landing; `q`: Quit
 
 First press `t` to Take off, then press any piloting command to move the drone, then press `l` to land the drone and press `q` to quit the program.
 
