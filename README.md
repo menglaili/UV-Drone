@@ -1,7 +1,7 @@
 # Keyboard Control and Data Collection
 **Authors:** Menglai Li
 
-**01 July 2020**
+**Date**: 01 July 2020
 # 1. Prerequisites
 Since the Parrot Olympe SDK only supports Linux system, all the code is tested in Ubuntu 18.04. It should be compatiable for other Linux distributions.
 
