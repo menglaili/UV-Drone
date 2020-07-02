@@ -22,6 +22,7 @@ CtrlTime = 0.02
 image_difference_threshold = 0.70
 orient_difference_threshold = 0.005
 height_difference_threshold = 0.015
+Correction_time = 2
 
 
 def create_dir(file_dir_list):
@@ -79,7 +80,8 @@ def fly(drone, streaming_example):
     drone.connection()
     drone.start_piloting()
     control = KeyboardCtrl()
-    for corr_count in range(10):
+    for corr_count in range(Correction_time):
+        print("Ready to Take off")
         while True:
             if control.takeoff():
                 drone(TakeOff() & FlyingStateChanged(state="hovering", _policy="wait", _timeout=5)).wait() 
@@ -89,7 +91,7 @@ def fly(drone, streaming_example):
         for i in range(Ctrl_seq.shape[0]):
             cur_count = Ctrl_seq[i, 0]
             ctrl = Ctrl_seq[i, 1:]
-            print(Ctrl_seq[i,:])
+            print('The next control command is: ', Ctrl_seq[i,:])
             drone.piloting_pcmd(ctrl[0], ctrl[1], ctrl[2], ctrl[3], CtrlTime)
             time.sleep(CtrlTime)
             if cur_count == Checkpoint[cpind]:
@@ -107,11 +109,13 @@ def fly(drone, streaming_example):
                     ori_const = data_diff[1]
                 else:
                     ori_const = 0
-                print("The diff before correction: ", [data_diff[0], data_diff[1]-ori_const, data_diff[2]])
+                print("The different of observation at this checkpoint before correction: ", [data_diff[0], data_diff[1]-ori_const, data_diff[2]])
                 if data_diff[0] > image_difference_threshold and abs(data_diff[1]-ori_const) < orient_difference_threshold and abs(data_diff[2]) < height_difference_threshold:
+                    print("No need corrections. Continue for the next checkpoint")
                     np.savetxt(os.path.join(cmd_ctrl_dir, str(corr_count)+'ctrl.txt'),np.array(ctrl_seq))
                     cpind += 1
                     continue
+                print("Need corrections. Corrections begin")
                 while True:
                     if control.break_loop():
                         print("Finish correction")
@@ -126,7 +130,7 @@ def fly(drone, streaming_example):
                         img = streaming_example.current_frame
                         meta = read_meta(streaming_example.meta_other)
                         data_diff = diff(img, meta, Images[cur_count], Metadata[cur_count])
-                        print("diff: ", data_diff)
+                        print("The different of observation is: ", data_diff)
                         drone.piloting_pcmd(control.roll(), control.pitch(), control.yaw(), control.throttle(), CtrlTime)
                         time.sleep(CtrlTime)
                         data_diff.extend([control.roll(), control.pitch(), control.yaw(), control.throttle()])
@@ -138,6 +142,7 @@ def fly(drone, streaming_example):
                             break
                 np.savetxt(os.path.join(cmd_ctrl_dir, str(corr_count)+'ctrl.txt'),np.array(ctrl_seq), fmt='%1.4f %1.4f %1.4f %d %d %d %d', newline='\n')
                 cpind += 1
+        print("Landing for next round of correction")
         drone(
             Landing()
             >> FlyingStateChanged(state="landed", _timeout=5)
