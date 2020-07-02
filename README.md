@@ -11,7 +11,7 @@ Installation and tutorials can be find [here](https://developer.parrot.com/docs/
 Please pay attention that the olympe is running in a virtualenv and all the package installed at this environment may not be used outside of it. 
 
 ## Sphinx
-Installation and usages can be find [here](https://developer.parrot.com/docs/sphinx/installation.html). This is the parrot drone official simulation environment. **For the safty purpose please run the code at least once at this environment before deploy it to the physical one. **
+Installation and usages can be find [here](https://developer.parrot.com/docs/sphinx/installation.html). This is the parrot drone official simulation environment. **For the safty purpose please run the code at least once at this environment before deploy it to the physical one.** 
 
 If for any reason you cannot connect to the Sphinx engine please see [Trouble shooting](https://developer.parrot.com/docs/sphinx/troubleshooting.html).
 
