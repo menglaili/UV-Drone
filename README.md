@@ -62,9 +62,9 @@ When the screen shows the FPV camera frame on a new window and the command line 
 
 - Press `t` to take off
 - Give some piloting commands e.g. `w w a`
-- Press `*space*` to select the first checkpoint
+- Press `c` to select the first checkpoint
 - Give some piloting commands
-- Press `*space*` to select the second checkpoint
+- Press `c` to select the second checkpoint
 - ...
 - Press `l` to land
 - Press `q` to quit the program
