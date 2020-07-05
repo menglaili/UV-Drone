@@ -1,3 +1,4 @@
+import csv
 import cv2
 import math
 import os
@@ -203,8 +204,6 @@ class StreamingExample(threading.Thread):
         count_pilotcmd = 0
         nowtime = 0
         checkpoint = []
-        print("Ready for record the reference path")
-        print("press 't' to Take off, press space to record the checkpoint, press piloting command to fly the drone")
         while not control.quit():
             if control.takeoff():
                 self.drone(TakeOff())
@@ -218,7 +217,6 @@ class StreamingExample(threading.Thread):
             elif control.checkpoint():  # the next count number corresponding to the next control command
                 ctime = time.time()
                 if (len(checkpoint) == 0 or checkpoint[-1] != count) and (ctime-nowtime)>1:  # 2 seconds cool down time
-                    print("Store the checkpoint at this place")
                     checkpoint.append(count)
                     nowtime = ctime
                     meta = read_meta(self.meta_other)
@@ -340,8 +338,12 @@ class StreamingExample(threading.Thread):
 
 
 if __name__ == "__main__":
+    path = [(3.8, 0),(1.5, -60), (0.7, 0), (5, -95),(2.14, -80)]  #,(0, 90, 1.2), (0, 90), (0, 90), (0, 90, -0.7), 
+    # path = [(0.5, 0), (0.5, 180)]
     with olympe.Drone("192.168.42.1") as drone:
         streaming_example = StreamingExample(drone, True, path)
+        streaming_example.dis2pair()
+        # print(streaming_example.path)
         # Start the video stream
         streaming_example.start()
         # Perform some live video processing while the drone is flying
@@ -350,3 +352,11 @@ if __name__ == "__main__":
         streaming_example.stop()
         # Recorded video stream postprocessing
         streaming_example.postprocessing()
+
+
+
+'''
+# Load data (deserialize)
+with open(os.path.join('./data/metadata', str(num)+'.pickle'), 'rb') as handle:
+    data = pickle.load(handle)
+'''
