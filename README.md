@@ -85,6 +85,14 @@ Run the following command in the Olympe's virtualenv.
 python3 follow_ctrl.py
 ```
 
+Open another terminal and run 
+
+```
+python3 plot_current_checkpoint.py
+```
+
+This program will show the checkpoint image.
+
 When the screen shows the FPV camera frame on a new window and the command line prints *Ready to Take off*, it ready to start.
 
 - "Ready to Take off"
