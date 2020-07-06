@@ -4,8 +4,11 @@ import cv2
 import time
 import math
 import pickle
+import threading
 import numpy as np
 import matplotlib.pyplot as plt
+from multiprocessing import Process
+from multiprocessing import Pool
 from pyquaternion import Quaternion
 from video_control import StreamingExample
 
@@ -60,6 +63,7 @@ def diff(img, meta, des1, exp_meta):
     return [matches/len(des1), q_diff, h_diff] #
 
 
+
 Data_root = './data'
 Output_root = './train_data_complete'
 create_dir(['./train_data_complete', './train_data_complete/image', './train_data_complete/meta', './train_data_complete/ctrl'])
@@ -77,12 +81,26 @@ for ind in Checkpoint:
     Metadata[ind] = meta
 
 
-
+def plot_func():
+    # import matplotlib
+    # matplotlib.use('Qt4Agg')
+    plt.figure(figsize=(5,3))
+    plt.ion()
+    plt.show()
+    while True:
+        cur_count = np.loadtxt(os.path.join(Output_root, "cur_count.txt")).astype(int)
+        img_ref_fig = plt.imread(os.path.join(Data_root,'image',str(cur_count)+'.png'))
+        # cv2.imshow(str(cur_count), img_ref_fig)
+        # cv2.waitKey(10000)
+        plt.imshow(img_ref_fig)
+        plt.draw()
+        plt.pause(0.0001)
+ 
 def fly(drone, streaming_example):
     drone.connection()
     drone.start_piloting()
     control = KeyboardCtrl()
-    for corr_count in range(Correction_time):
+    for corr_count in range(1, Correction_time):
         while True:
             if control.takeoff():
                 drone(TakeOff() & FlyingStateChanged(state="hovering", _policy="wait", _timeout=5)).wait() 
@@ -116,6 +134,13 @@ def fly(drone, streaming_example):
                     cpind += 1
                     continue
                 print("Need corrections. Corrections begin")
+                # write to a txt file with the current checkpoint
+                np.savetxt(os.path.join(Output_root, "cur_count.txt"), np.array([cur_count]))
+                # pool = Pool(processes=1) 
+                # pool.apply_async(plot_func)
+                # x = Process(target=plot_func, args=())
+                # x = threading.Thread(target=plot_func, args=())
+                # x.start()
                 while True:
                     if control.break_loop():
                         print("Finish correction")
@@ -132,15 +157,6 @@ def fly(drone, streaming_example):
                         data_diff = diff(img, meta, Images[cur_count][0], Metadata[cur_count])
                         print("The different of observation is: ", data_diff)
                         drone.piloting_pcmd(control.roll(), control.pitch(), control.yaw(), control.throttle(), CtrlTime)
-                        # plt.ion()
-                        # plt.show(block = False)
-                        # plt.imshow(img_ref_fig)
-                        # plt.show()
-                        # plt.pause(0.002)
-                        # cv2.imshow(str(cur_count), img_ref_fig)
-                        # cv2.waitKey(20)
-                        # cv2.destroyAllWindows()
-                        # time.sleep(CtrlTime)
                         data_diff.extend([control.roll(), control.pitch(), control.yaw(), control.throttle()])
                         ctrl_seq.append(data_diff)
                         if data_diff[0] > image_difference_threshold and abs(data_diff[1]) < orient_difference_threshold and abs(data_diff[2]) < height_difference_threshold: 
@@ -148,9 +164,11 @@ def fly(drone, streaming_example):
                             cv2.imwrite(os.path.join(cmd_img_dir, str(corr_count)+'after_cor.png'), img)
                             np.savetxt(os.path.join(cmd_dict_dir, str(corr_count)+'after_cor.txt'),np.array(meta), fmt='%1.4f', newline='\n')
                             break
-                cv2.destroyAllWindows()
+                # cv2.destroyAllWindows()
                 np.savetxt(os.path.join(cmd_ctrl_dir, str(corr_count)+'ctrl.txt'),np.array(ctrl_seq), fmt='%1.4f %1.4f %1.4f %d %d %d %d', newline='\n')
                 cpind += 1
+                # pool.close()
+                # x.join()
         print("Landing for next round of correction")
         drone(
             Landing()
