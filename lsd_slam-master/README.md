@@ -1,3 +1,28 @@
+
+This repository has been cloned from kevin-george's fork of TUM-Vision LSD-SLAM, see http://vision.in.tum.de/lsdslam.
+This code has been modified to run LSD-SLAM with Ubuntu 16.04 + ROS Kinetic. The following changes should be made to run it with Ubuntu 16.04 + ROS Kinetic.
+
+1. Install new libraries
+```
+sudo apt-get update
+sudo apt install ros-kinetic-libg2o  ros-kinetic-opencv3 libsuitesparse-dev libqglviewer-dev-qt4 
+sudo ln -s /usr/lib/x86_64-linux-gnu/libQGLViewer-qt4.so /usr/lib/x86_64-linux-gnu/libQGLViewer.so  
+```
+2. Create the Workspace
+```
+mkdir -p ros_workspace/src
+cd ros_workspace/src
+git clone https://github.com/kevin-george/lsd_slam.git src/lsd_slam  
+cd ..
+catkin_make
+```
+3. Run LSD SLAM on a dataset
+- Open a new terminal and run ``roscore`` 
+- Open another terminal to launch LSD SLAM viewer
+``rosrun lsd_slam_viewer viewer``
+- Open another terminal to run dataset SLAM
+``rosrun lsd_slam_core dataset _files:=<files> _hz:=<hz> _calib:=<calibration_file>``
+
 # LSD-SLAM: Large-Scale Direct Monocular SLAM
 
 LSD-SLAM is a novel approach to real-time monocular SLAM. It is fully direct (i.e. does not use keypoints / features) and creates large-scale, 
