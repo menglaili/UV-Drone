@@ -51,13 +51,13 @@ SAVEVID = True
 weights = './models/best.pt'
 imgsz = 640
 
+# public center point data
 connection = pika.BlockingConnection(
     pika.ConnectionParameters(host='localhost'))
 channel = connection.channel()
-
-# channel.queue_declare(queue='hello')
 channel.exchange_declare(exchange='logs',
                          exchange_type='fanout')
+
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 os.environ["CUDA_VISIBLE_DEVICES"] = '0'  # only has 1 GPU set GPU 0 as default
@@ -66,7 +66,6 @@ half = device != 'cpu'
 model = attempt_load(weights, map_location=device)  # load FP32 model
 if half:
     model.half()  # to FP16
-
 def detect_yolo(img0, PLOT = True):
     imgsz = 640
     # Load image
@@ -93,6 +92,9 @@ def detect_yolo(img0, PLOT = True):
     else:
         return None
 
+backSub = cv2.createBackgroundSubtractorMOG2()
+cmax_list = []
+center_list = []
 def detect_bgs(frame):
     frame = copy.copy(frame)
     fgMask = backSub.apply(frame)
@@ -143,18 +145,9 @@ def undistort_img(img):
 
 
 cap = cv2.VideoCapture(0)
-
-
-## [create]
-backSub = cv2.createBackgroundSubtractorMOG2()
-
-## [create]
-
-cmax_list = []
-center_list = []
-
 if SAVEVID:
     out = cv2.VideoWriter('./follow_path.avi', cv2.VideoWriter_fourcc(*'XVID'), 10, (640, 480))
+
 
 curcount = 0
 control = KeyboardCtrl()
@@ -178,8 +171,10 @@ while(1):
     center_frame_bgs = detect_bgs(frame)
     if center_frame_yolo:
         center, frame = center_frame_yolo
+        nodetect = False
     elif center_frame_bgs:
         center, frame = center_frame_bgs
+        nodetect = False
     else:
         nodetect = True
     # Plot bbox

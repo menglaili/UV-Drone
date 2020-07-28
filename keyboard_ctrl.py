@@ -1,7 +1,5 @@
-import olympe
 import subprocess
 import time
-from olympe.messages.ardrone3.Piloting import TakeOff, Landing, PCMD
 from pynput.keyboard import Listener, Key, KeyCode
 from collections import defaultdict
 from enum import Enum
@@ -146,7 +144,7 @@ class KeyboardCtrl(Listener):
         )
 
     def yaw(self):
-        return self._axis(
+        return 2 * self._axis(
             self._ctrl_keys[Ctrl.TURN_LEFT],
             self._ctrl_keys[Ctrl.TURN_RIGHT]
         )
@@ -193,6 +191,8 @@ class KeyboardCtrl(Listener):
 
 
 if __name__ == "__main__":
+    import olympe
+    from olympe.messages.ardrone3.Piloting import TakeOff, Landing, PCMD
     ctrl_seq = []
     with olympe.Drone("192.168.42.1") as drone:
         drone.connection()

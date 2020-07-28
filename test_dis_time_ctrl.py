@@ -16,6 +16,7 @@
 '''
 moveby(go forward, go rightward, go downward)
 '''
+import os
 import time
 import pika
 import pickle
@@ -66,14 +67,17 @@ def get3D(z):
     return pixel2world(z, np.array(centerstr))
 
 # magnitude
-dis_mag = [0.1,0.2,0.3,0.4,0.5]
-time_mag = [1,3,5]
+dis_mag = [0.1,0.2,0.3,0.4,0.5]  
+time_mag = [1,2,3,4,5]  # 1s fly 0.8m in the simulator   0.35,
 # loop times
 LOOPs = 10
+# intermedium result path
+interpath = "./intermedium/time"
+if not os.path.isdir(interpath):
+    os.mkdir(interpath)
 
-
-def gen_ctrl_command(direction, mag):
-    # direction: 0,1,2,3 forward, backward, , leftward rightward
+def gen_dis_cmd(direction, mag):
+    # direction: 0,1,2,3 forward, backward, leftward, rightward
     ctrl_direction = np.zeros(2)  
     if direction == 0:
         ctrl_direction[0] = mag
@@ -100,6 +104,21 @@ def ori_diff(orien_ori, orien_end):
     q_diff = Quaternion.absolute_distance(q_exp, q_meta) 
     return q_diff
 
+def gen_time_cmd(direction, mag, CtrlTime = 0.02, CtrlMag = 30):
+    # direction: 0,1,2,3 forward, backward, leftward, rightward
+    # PCMD[-30 left/+30 right, -30 backward/+30 forward, 0, 0]
+    n_row = int(mag/CtrlTime)
+    if direction == 0:
+        ctrl_direction = np.array([[0, CtrlMag, 0, 0, CtrlTime],]*n_row)
+    elif direction == 1:
+        ctrl_direction = np.array([[0, -CtrlMag, 0, 0, CtrlTime],]*n_row)
+    elif direction == 2:
+        ctrl_direction = np.array([[-CtrlMag, 0, 0, 0, CtrlTime],]*n_row)
+    elif direction == 3:
+        ctrl_direction = np.array([[CtrlMag, 0, 0, 0, CtrlTime],]*n_row)
+    return ctrl_direction
+
+
 messthreads = ConsumerThread("localhost")
 print("start multiprocessing")
 messthreads.start()
@@ -110,6 +129,7 @@ def fly_dis(drone, direction, streaming_example, data_dic = {}):
     drone(
         TakeOff(_no_expect=True)
         & FlyingStateChanged(state="hovering", _policy="wait", _timeout=5)).wait()
+    time.sleep(1)
     drone.start_piloting()
     # record the start point x,y
     z = streaming_example.meta_other['ground_distance']
@@ -120,7 +140,7 @@ def fly_dis(drone, direction, streaming_example, data_dic = {}):
     for i, mag in enumerate(dis_mag):
         LOOP = 10
         data_dic[mag] = []
-        ctrl_direction = gen_ctrl_command(direction, mag)
+        ctrl_direction = gen_dis_cmd(direction, mag)
         while not control.quit():
             if control.takeoff():
                 drone(TakeOff(_no_expect=True)
@@ -134,7 +154,7 @@ def fly_dis(drone, direction, streaming_example, data_dic = {}):
                 print('ori_diff: ', ori_diff(orien_ori, orien_end))
                 drone.piloting_pcmd(control.roll(), control.pitch(), control.yaw(), control.throttle(), 0.02)
             elif control.checkpoint(): # run the command
-                print(ctrl_direction)
+                print(direction, mag, LOOP)
                 drone(
                     moveBy(ctrl_direction[0], ctrl_direction[1], 0, 0)
                     >> FlyingStateChanged(state="hovering", _timeout=5)
@@ -149,19 +169,70 @@ def fly_dis(drone, direction, streaming_example, data_dic = {}):
             if LOOP == 0:
                 break
         print(data_dic[mag])
-        with open("./intermediu/dic_dir%d_mag%.1f.pickle" % (direction, mag), "wb") as f:
+        with open(os.path.join(interpath, "dic_dir%d_mag%.1f.pickle" % (direction, mag)), "wb") as f:
             pickle.dump(data_dic[mag], f)
+    drone(Landing())
+
+def fly_time(drone, direction, streaming_example, data_dic = {}):
+    # take off
+    print("flying")
+    drone(
+        TakeOff(_no_expect=True)
+        & FlyingStateChanged(state="hovering", _policy="wait", _timeout=5)).wait()
+    time.sleep(1)
+    drone.start_piloting()
+    # record the start point x,y
+    z = streaming_example.meta_other['ground_distance']
+    startpoint = get3D(z)
+    orien_ori = streaming_example.meta_other['drone_quat']
+    # while loop and execute the rest command in the command list
+    control = KeyboardCtrl()
+    for i, mag in enumerate(time_mag):
+        LOOP = 10
+        data_dic[mag] = []
+        ctrl_direction = gen_time_cmd(direction, mag)
+        while not control.quit():
+            if control.takeoff():
+                drone(TakeOff(_no_expect=True)
+                        & FlyingStateChanged(state="hovering", _policy="wait", _timeout=5)).wait()
+                z = streaming_example.meta_other['ground_distance']
+                startpoint = get3D(z) 
+            elif control.landing():
+                drone(Landing())
+            elif control.has_piloting_cmd():
+                orien_end = streaming_example.meta_other['drone_quat']
+                print('ori_diff: ', ori_diff(orien_ori, orien_end))
+                drone.piloting_pcmd(control.roll(), control.pitch(), control.yaw(), control.throttle(), 0.02)
+            elif control.checkpoint(): # run the command
+                print(direction, mag, LOOP)
+                for ind in range(ctrl_direction.shape[0]):
+                    drone.piloting_pcmd(int(ctrl_direction[ind, 0]), int(ctrl_direction[ind, 1]), int(ctrl_direction[ind, 2]), int(ctrl_direction[ind, 3]), ctrl_direction[ind, 4])
+                    time.sleep(ctrl_direction[ind, 4])
+                # record the difference
+                z = streaming_example.meta_other['ground_distance']
+                endpoint = get3D(z)
+                data_dic[mag].append((endpoint - startpoint)[:2])
+                startpoint = endpoint
+                LOOP -= 1
+            if LOOP == 0:
+                break
+        print(data_dic[mag])
+        with open(os.path.join(interpath, "dic_dir%d_mag%.1f.pickle" % (direction, mag)), "wb") as f:
+            pickle.dump(data_dic[mag], f)
+    drone(Landing())
+
 
 
 if __name__ == "__main__":
     # store data
     dis_list = [{},{},{},{}]
     time_list = [{},{},{},{}]
-    with olympe.Drone("192.168.42.1") as drone:
+    with olympe.Drone("192.168.42.1") as drone: #"192.168.42.1"
         streaming_example = StreamingExample(drone, True)
         streaming_example.start()
-        for i in range(4):
-            fly_dis(drone, i, streaming_example, data_dic = dis_list[i])
-            with open("./dis_list_dic%d.pickle"%(i), "wb") as f:
-                pickle.dump(dis_list, f)
+        for direction in range(4):
+            fly_time(drone, direction, streaming_example, data_dic = time_list[direction])
         streaming_example.stop()
+
+
+

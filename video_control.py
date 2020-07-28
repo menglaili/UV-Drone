@@ -10,6 +10,8 @@ import traceback
 import time
 import numpy as np
 import pickle
+import pika
+
 
 
 
@@ -37,15 +39,73 @@ def read_meta(metadata):
     y = metadata['drone_quat']['y']
     z = metadata['drone_quat']['z']
     g_d = metadata['ground_distance']
-    exp_meta = [w,x,y,z,g_d]
+    exp_meta = [g_d,w,x,y,z]
     return exp_meta
+
+
+with open("./camera_calibration_API/camera_mtx.pickle", 'rb') as f:
+    camera_mtx = pickle.load(f)
+camera_mtx = np.linalg.inv(camera_mtx)  #INVERSED
+def find_xyz(center, z):
+    '''
+    camera_mtx: Instrinct parameter INVERSED
+    center: camera pixel position of detected drone
+    z: The height generate back from the drone
+    Return: the location of drone in Camera Frame !!!
+    '''
+    z = 2.86 - z
+    center = np.array(center)
+    center = np.hstack((center, np.array([1])))
+    image_frame = camera_mtx.dot(center)
+    camera_frame = image_frame * z
+    # camera_frame[2] = 2.86 - camera_frame[2]
+    return camera_frame
+
+
+connection = pika.BlockingConnection(
+    pika.ConnectionParameters(host='localhost'))
+channel = connection.channel()
+
+channel.queue_declare(queue='hello')
+
+CAMERA_LIST = []
+class ConsumerThread(threading.Thread):
+    def __init__(self, host, *args, **kwargs):
+        super(ConsumerThread, self).__init__(*args, **kwargs)
+
+        self._host = host
+
+    # Not necessarily a method.
+    def callback_func(self, channel, method, properties, body):
+        CAMERA_LIST.append(body) 
+
+    def run(self):
+
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters(host=self._host)) 
+
+        channel = connection.channel()
+
+        channel.exchange_declare(exchange='logs', exchange_type='fanout')
+
+        result = channel.queue_declare(queue='', exclusive=True)
+        queue_name = result.method.queue
+
+        channel.queue_bind(exchange='logs', queue=queue_name)
+
+        
+        channel.basic_consume(
+            queue=queue_name, on_message_callback=self.callback_func, auto_ack=True)
+
+
+        channel.start_consuming()
 
 class StreamingExample(threading.Thread):
 
     def __init__(self, drone, recording, path = [(1,0),(2, 90)]):
         # Create the olympe.Drone object from its IP address
         self.drone = drone  #10.202.0.1  192.168.42.1
-        self.datafile = './data'
+        self.datafile = './data_new'
         
         if not os.path.isdir(self.datafile):
             os.mkdir(self.datafile)
@@ -204,10 +264,18 @@ class StreamingExample(threading.Thread):
         count_pilotcmd = 0
         nowtime = 0
         checkpoint = []
+        pose_list = []
+        takeoffsign = False
+        messthreads = ConsumerThread("localhost")
+        messthreads.start()
         while not control.quit():
             if control.takeoff():
-                self.drone(TakeOff())
+                print(2)
+                takeoffsign = True
+                self.drone(TakeOff(_no_expect=True)
+                    & FlyingStateChanged(state="hovering", _policy="wait", _timeout=5)).wait()
             elif control.landing():
+                takeoffsign = False
                 self.drone(Landing())
             elif control.has_piloting_cmd():
                 count_pilotcmd += 1
@@ -220,8 +288,10 @@ class StreamingExample(threading.Thread):
                     checkpoint.append(count)
                     nowtime = ctime
                     meta = read_meta(self.meta_other)
+                    camera_frame = find_xyz([int(centerstr[0]), int(centerstr[1])], meta[0])
+                    meta1 = np.hstack((camera_frame, np.array(meta)[1:]))  # x,y,z,qw,qx,qy,qz  z is from camera frame
                     cv2.imwrite(os.path.join(cmd_img_dir, str(count)+'.png'), self.current_frame)
-                    np.savetxt(os.path.join(cmd_dict_dir, str(count)+'.txt'),np.array(meta), fmt='%1.4f', newline='\n')
+                    np.savetxt(os.path.join(cmd_dict_dir, str(count)+'.txt'),np.array(meta1), fmt='%1.4f', newline='\n')
                     ctrl_seq.append([count, 0, 0, 0, 0])
                     count += 1
             else:
@@ -230,10 +300,84 @@ class StreamingExample(threading.Thread):
                     ctrl_seq.append([count, 0, 0, 0, 0])
                     count += 1
             time.sleep(self.flytimestamp)
+            # record the trajectory
+            if takeoffsign and CAMERA_LIST:
+                z = self.meta_other['ground_distance']
+                # center = np.loadtxt('./xy_pos.txt')
+                centerstr = CAMERA_LIST.pop(0).split()
+                camera_frame = find_xyz([int(centerstr[0]), int(centerstr[1])], z)
+                pose_list.append(np.hstack((count, camera_frame)))
+
         np.savetxt(os.path.join(self.datafile, 'ctrl_seq.txt'),np.array(ctrl_seq), fmt='%d', newline='\n')
         np.savetxt(os.path.join(self.datafile, 'checkpoint.txt'), np.array(checkpoint), fmt='%d')
+        np.savetxt(os.path.join(self.datafile, 'pose_list.txt'), np.array(pose_list), fmt='%d %.4f %.4f %.4f')
+    
 
-    # the one for demo
+    def hang(self):
+        control = KeyboardCtrl()
+        self.drone.start_piloting()
+        count = 0
+        while not control.quit():
+            if control.takeoff():
+                self.drone(TakeOff())
+            elif control.landing():
+                self.drone(Landing())
+            elif control.has_piloting_cmd():
+                self.drone.piloting_pcmd(control.roll(), control.pitch(), control.yaw(), control.throttle(), 0.02)
+                time.sleep(0.02)
+                # print("GPS position after take-off : ", self.drone.get_state(PositionChanged))
+            elif control.break_loop():
+                cv2.imwrite(os.path.join(self.datafile, str(count)+'.png'), self.current_frame)
+                count += 1
+            
+
+    def postprocessing(self):
+        if self.recording:
+            # Convert the raw .264 file into an .mp4 file
+            h264_filepath = os.path.join(self.datafile, 'h264_data.264')
+            mp4_filepath = os.path.join(self.datafile, 'h264_data.mp4')
+            subprocess.run(
+                shlex.split('ffmpeg -i {} -c:v copy -y {}'.format(
+                    h264_filepath, mp4_filepath)),
+                check=True
+            )
+        else:
+        	pass
+        # Replay this MP4 video file using the default video viewer (VLC?)
+        # subprocess.run(
+        #     shlex.split('xdg-open {}'.format(mp4_filepath)),
+        #     check=True
+        # )
+
+
+
+
+if __name__ == "__main__":
+    path = [(3.8, 0),(1.5, -60), (0.7, 0), (5, -95),(2.14, -80)]  #,(0, 90, 1.2), (0, 90), (0, 90), (0, 90, -0.7), 
+    # path = [(0.5, 0), (0.5, 180)]
+    with olympe.Drone("192.168.42.1") as drone:
+        streaming_example = StreamingExample(drone, True, path)
+        streaming_example.dis2pair()
+        # print(streaming_example.path)
+        # Start the video stream
+        streaming_example.start()
+        # Perform some live video processing while the drone is flying
+        streaming_example.fly_ep() # streaming_example.fly() # streaming_example.hang()# 
+        # Stop the video stream
+        streaming_example.stop()
+        # Recorded video stream postprocessing
+        streaming_example.postprocessing()
+
+
+
+'''
+# Load data (deserialize)
+with open(os.path.join('./data/metadata', str(num)+'.pickle'), 'rb') as handle:
+    data = pickle.load(handle)
+'''
+
+'''
+# the one for demo
     def fly(self):
         
         print("flying")
@@ -297,66 +441,4 @@ class StreamingExample(threading.Thread):
             >> FlyingStateChanged(state="landed", _timeout=5)
         ).wait()
         print("Landed\n")
-
-    def hang(self):
-        control = KeyboardCtrl()
-        self.drone.start_piloting()
-        count = 0
-        while not control.quit():
-            if control.takeoff():
-                self.drone(TakeOff())
-            elif control.landing():
-                self.drone(Landing())
-            elif control.has_piloting_cmd():
-                self.drone.piloting_pcmd(control.roll(), control.pitch(), control.yaw(), control.throttle(), 0.02)
-                time.sleep(0.02)
-                # print("GPS position after take-off : ", self.drone.get_state(PositionChanged))
-            elif control.break_loop():
-                cv2.imwrite(os.path.join(self.datafile, str(count)+'.png'), self.current_frame)
-                count += 1
-            
-
-    def postprocessing(self):
-        if self.recording:
-            # Convert the raw .264 file into an .mp4 file
-            h264_filepath = os.path.join(self.datafile, 'h264_data.264')
-            mp4_filepath = os.path.join(self.datafile, 'h264_data.mp4')
-            subprocess.run(
-                shlex.split('ffmpeg -i {} -c:v copy -y {}'.format(
-                    h264_filepath, mp4_filepath)),
-                check=True
-            )
-        else:
-        	pass
-        # Replay this MP4 video file using the default video viewer (VLC?)
-        # subprocess.run(
-        #     shlex.split('xdg-open {}'.format(mp4_filepath)),
-        #     check=True
-        # )
-
-
-
-
-if __name__ == "__main__":
-    path = [(3.8, 0),(1.5, -60), (0.7, 0), (5, -95),(2.14, -80)]  #,(0, 90, 1.2), (0, 90), (0, 90), (0, 90, -0.7), 
-    # path = [(0.5, 0), (0.5, 180)]
-    with olympe.Drone("192.168.42.1") as drone:
-        streaming_example = StreamingExample(drone, True, path)
-        streaming_example.dis2pair()
-        # print(streaming_example.path)
-        # Start the video stream
-        streaming_example.start()
-        # Perform some live video processing while the drone is flying
-        streaming_example.fly_ep() # streaming_example.fly() # streaming_example.hang()# 
-        # Stop the video stream
-        streaming_example.stop()
-        # Recorded video stream postprocessing
-        streaming_example.postprocessing()
-
-
-
-'''
-# Load data (deserialize)
-with open(os.path.join('./data/metadata', str(num)+'.pickle'), 'rb') as handle:
-    data = pickle.load(handle)
 '''
