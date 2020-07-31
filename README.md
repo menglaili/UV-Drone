@@ -11,4 +11,4 @@ import numpy as np
 
 pose_list = np.load('./pose_1.npy')
 ```
-Each pose vector contains 3D position vector and orientation in quaternion i.e. [index, x, y, z, qw, qx, qy, qz]. There may be a small number of pose in the begining or in the end of the list not having correponding frames in the video.
+Each pose vector contains 3D position vector and orientation in quaternion i.e. [index, x, y, z, qw, qx, qy, qz]. There may be a small number of pose in the begining or end of the list not having correponding frames in the video.
