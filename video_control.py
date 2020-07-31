@@ -11,6 +11,7 @@ import time
 import numpy as np
 import pickle
 import pika
+from extrinsct_webcam import pixel2world
 
 
 
@@ -33,6 +34,11 @@ from pynput.keyboard import Listener, Key, KeyCode
 
 olympe.log.update_config({"loggers": {"olympe": {"level": "WARNING"}}})
 
+
+def get3D(z):
+    centerstr = CAMERA_LIST.pop(-1).split()
+    return pixel2world(z, np.array(centerstr))
+
 def read_meta(metadata):
     w = metadata['drone_quat']['w']
     x = metadata['drone_quat']['x']
@@ -42,6 +48,12 @@ def read_meta(metadata):
     exp_meta = [g_d,w,x,y,z]
     return exp_meta
 
+def read_orimeta(metadata):
+    w = metadata['w']
+    x = metadata['x']
+    y = metadata['y']
+    z = metadata['z']
+    return np.array([w,x,y,z])
 
 with open("./camera_calibration_API/camera_mtx.pickle", 'rb') as f:
     camera_mtx = pickle.load(f)
@@ -173,6 +185,8 @@ class StreamingExample(threading.Thread):
             )
             # Start video streaming
             self.drone.start_video_streaming()
+            self.count = 0
+            self.pose_list = []
 
     def stop(self):
         if self.recording:
@@ -316,20 +330,28 @@ class StreamingExample(threading.Thread):
     def hang(self):
         control = KeyboardCtrl()
         self.drone.start_piloting()
-        count = 0
+        
+        messthreads = ConsumerThread("localhost")
+        messthreads.start()
+        takeoffsign = False
         while not control.quit():
             if control.takeoff():
                 self.drone(TakeOff())
+                takeoffsign = True
             elif control.landing():
                 self.drone(Landing())
+                takeoffsign = False
             elif control.has_piloting_cmd():
                 self.drone.piloting_pcmd(control.roll(), control.pitch(), control.yaw(), control.throttle(), 0.02)
                 time.sleep(0.02)
-                # print("GPS position after take-off : ", self.drone.get_state(PositionChanged))
-            elif control.break_loop():
-                cv2.imwrite(os.path.join(self.datafile, str(count)+'.png'), self.current_frame)
-                count += 1
-            
+            if takeoffsign and CAMERA_LIST:
+                z = self.meta_other['ground_distance']
+                startpoint = get3D(z)
+                orien_ori = self.meta_other['drone_quat']
+                ori_drone = read_orimeta(orien_ori)
+                self.pose_list.append(np.hstack((self.count, startpoint, ori_drone)))
+            self.count += 1
+        np.save(os.path.join(self.datafile, 'poseall.npy'), np.array())
 
     def postprocessing(self):
         if self.recording:
@@ -362,7 +384,7 @@ if __name__ == "__main__":
         # Start the video stream
         streaming_example.start()
         # Perform some live video processing while the drone is flying
-        streaming_example.fly_ep() # streaming_example.fly() # streaming_example.hang()# 
+        streaming_example.hang() # streaming_example.fly() # streaming_example.hang()# 
         # Stop the video stream
         streaming_example.stop()
         # Recorded video stream postprocessing
