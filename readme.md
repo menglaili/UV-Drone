@@ -1,4 +1,4 @@
-key_code: for reading convenience, I copy important code files into this folder
+key_code: important code files for controller, data collection, training, evaluation
     - control_collectData
         - Anafi_tracking.py: webcam localization system and localization publisher
         - keyboard_ctrl.py: keyboard controller for Anafi
