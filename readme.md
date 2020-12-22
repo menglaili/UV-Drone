@@ -1,10 +1,18 @@
-key_code: important code files for controller, data collection, training, evaluation
+## key_code: 
+important code files for controller, data collection, training, evaluation
+
     - control_collectData
+    
         - Anafi_tracking.py: webcam localization system and localization publisher
+        
         - keyboard_ctrl.py: keyboard controller for Anafi
+        
         - video_control.py: collect reference path, collect control correction, data augmentation using active transfer learning
+        
     - NNtraining
+    
         - data_provider.py: read data from files and feed them to neural network
+        
         - models.py: the neural network architecture
         - NNutils.py: helper functions
         - train.py: main function for training the result
