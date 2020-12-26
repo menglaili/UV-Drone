@@ -299,6 +299,7 @@ class StreamingExample(threading.Thread):
             cur_pose = self.get_pose()
             with open(self.pathdic["pose"], "ab") as f:
                 np.savetxt(f, cur_pose.reshape(1, -1), fmt = "%1.4f")
+
     def SavePose(self):
         if self.SavePoseFlag:
             cur_pose = self.get_pose()
@@ -337,7 +338,7 @@ class StreamingExample(threading.Thread):
         if Flag[3]:
             self.SaveDictFlag = True
 
-        def create_file(self, dir1, dir2 = None, create = False):
+    def create_file(self, dir1, dir2 = None, create = False):
         if dir2:
             directory = os.path.join(dir1, dir2)
             if create:
@@ -609,6 +610,8 @@ class StreamingExample(threading.Thread):
         self.path2world()
         meet_threshold = False
         self.path.append("End")
+        if not CAMERA_LIST:
+            self.SetSaveFlag([1, 0, 1, 0])
         while (not control.quit()) and self.path:
             if control.takeoff():
                 self.drone(TakeOff(_no_expect=True)
@@ -649,6 +652,7 @@ class StreamingExample(threading.Thread):
         messthreads.start()
         TemPath = copy.deepcopy(self.path)
         self.updateTL()
+        if 
         self.SetSaveFlag()
         for i in range(Start_ind, CorrTime):
             self.path.append("End")
@@ -857,6 +861,6 @@ if __name__ == "__main__":
         # streaming_example.dis2pair()
         print(streaming_example.path)
         streaming_example.start()
-        streaming_example.fly_dis_traj() 
+        streaming_example.get_dis_ref() 
         streaming_example.stop()
         streaming_example.postprocessing()
