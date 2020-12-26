@@ -350,10 +350,10 @@ class StreamingExample(threading.Thread):
             if not os.path.isdir(dir1):
                 os.mkdir(dir1)
 
-    def SetParaDir(self, corrtimes):
+    def SetParaDir(self, corrtimes, file_dir):
         # set up data dir
         # output and store setting parameter
-        self.NNtestdir = self.create_file("./NNtest", str(corrtimes))
+        self.NNtestdir = self.create_file(file_dir, str(corrtimes))
         self.pathdic["dict"] = {}
         self.pathdic["dict"]["cpose"] = self.create_file(self.NNtestdir,'checkpoint_poses.pickle')
         self.pathdic["dict"]["ctrl_pred"] = self.create_file(self.NNtestdir,'ctrl_pred.pickle')
@@ -390,19 +390,25 @@ class StreamingExample(threading.Thread):
         return np.hstack((pose[:3], yaw))
 
     def compute_diff(self, count, onlyorihei = False):
-        cur_pose = self.get_pose()
-        cur_xyzq = self.pose2xyzq(cur_pose)
-        gt_xyzq = self.track_list[count, :]
-        print("xyzq diff ", cur_xyzq - gt_xyzq)
-        sign = False
-        if not onlyorihei:
-            if np.all(np.abs(cur_xyzq - gt_xyzq) < np.array((0.07, 0.07, 0.07, 0.03))):
-                sign = True
-            return sign, cur_xyzq - gt_xyzq, cur_xyzq, gt_xyzq
+        if CAMERA_LIST:
+            cur_pose = self.get_pose()
+            cur_xyzq = self.pose2xyzq(cur_pose)
+            gt_xyzq = self.track_list[count, :]
+            print("xyzq diff ", cur_xyzq - gt_xyzq)
+            sign = False
+            if not onlyorihei:
+                if np.all(np.abs(cur_xyzq - gt_xyzq) < np.array((0.07, 0.07, 0.07, 0.03))):
+                    sign = True
+                return sign, cur_xyzq - gt_xyzq, cur_xyzq, gt_xyzq
+            else:
+                if np.all(np.abs(cur_xyzq - gt_xyzq)[2:] < np.array((0.1, 0.1, 0.1, 0.03))[2:]):
+                    sign = True
+                return sign
         else:
-            if np.all(np.abs(cur_xyzq - gt_xyzq)[2:] < np.array((0.1, 0.1, 0.1, 0.03))[2:]):
-                sign = True
-            return sign
+            if not onlyorihei:
+                return False, [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]
+            else:
+                return False
 
 
     def check_refinfo(self):
@@ -582,12 +588,11 @@ class StreamingExample(threading.Thread):
 
 
     # collect reference data
-    def get_dis_ref(self):
+    def get_dis_ref(self, file_dir = './reference_data'):
         '''
         the print orientation is already subtract yaw0, the store orientation does not
         '''
-        assert not os.path.isfile("./test_scene1_ref/0/pose.txt"), "Exist pose.txt file"
-        self.datafile = "./test_scene1_ref"
+        self.datafile = file_dir
         if not os.path.isdir(self.datafile):
             os.mkdir(self.datafile)
         self.drone.start_piloting()
@@ -633,7 +638,7 @@ class StreamingExample(threading.Thread):
 
 
     # collect the training data without DAgger
-    def get_dis_cor(self):
+    def get_dis_cor(self, file_dir = './initial_training_data'):
         Start_ind = 1
         randnum = 30
         CorrTime = Start_ind + randnum
@@ -647,7 +652,7 @@ class StreamingExample(threading.Thread):
         self.SetSaveFlag()
         for i in range(Start_ind, CorrTime):
             self.path.append("End")
-            self.datafile = "./test_scene1_current/" 
+            self.datafile = file_dir 
             if not os.path.isdir(self.datafile):
                 os.mkdir(self.datafile)
             self.datafile += str(i)
@@ -740,7 +745,7 @@ class StreamingExample(threading.Thread):
     
 
     # collect data with DAgger
-    def test_NN_perform(self):
+    def test_NN_perform(self, file_dir = "./augmented_training_data"):
         correction_times_start = 137  # new model starting from 69  # scene1 starting from 135
         correction_times_end = 138
         control = KeyboardCtrl()
@@ -749,10 +754,10 @@ class StreamingExample(threading.Thread):
         TemPath = copy.deepcopy(self.path)
         self.updateTL()
         self.SetSaveFlag()
-        self.create_file("./NNtest")
+        self.create_file(file_dir)
         self.drone.start_piloting()
         for count in range(correction_times_start, correction_times_end):
-            self.SetParaDir(count)
+            self.SetParaDir(count, file_dir)
             self.path.append("End")
             CorrPoseDict = {}
             CorrCtrlDict = {}
@@ -843,20 +848,15 @@ class StreamingExample(threading.Thread):
 
 
 if __name__ == "__main__":
-    # path = [(3.8, 0),(1.5, -60), (0.7, 0), (5, -95),(2.14, -80)]  #,(0, 90, 1.2), (0, 90), (0, 90), (0, 90, -0.7), 
-    # path = [(0.5, 0), (0.5, 0), (0.5, 0), (0, np.radians(-90)),\
-    #  (0, 0, 0.5), (1, 0), (0, np.radians(-90)),\
-    #   (1, 0), (0, 0, -0.5), (0.5, 0), (0, np.radians(-90)),\
-    #   (0.5, 0), (0.5, 0), (0, np.radians(-90))]
     path = [(0.5, 0), (0.5, 0), (0.5, 0), (0.5, 0), (0, np.radians(-90)),\
         (0.5, 0), (0.5, 0), (0, np.radians(-90)),\
         (0.5, 0), (0.5, 0), (0.5, 0), (0.5, 0), (0, np.radians(-90)),\
         (0.5, 0), (0.5, 0), (0, np.radians(-90))]
-    with olympe.Drone("192.168.42.1", loglevel=0) as drone: # "192.168.42.1" "10.202.0.1"
+    with olympe.Drone("192.168.42.1") as drone: # "192.168.42.1" "10.202.0.1"
         streaming_example = StreamingExample(drone, True, path)
         # streaming_example.dis2pair()
         print(streaming_example.path)
         streaming_example.start()
-        streaming_example.fly_dis_traj() #test_NN_perform() #get_dis_cor() # streaming_example.fly() # streaming_example.hang()# 
+        streaming_example.fly_dis_traj() 
         streaming_example.stop()
         streaming_example.postprocessing()
