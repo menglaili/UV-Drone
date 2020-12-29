@@ -652,7 +652,6 @@ class StreamingExample(threading.Thread):
         messthreads.start()
         TemPath = copy.deepcopy(self.path)
         self.updateTL()
-        if 
         self.SetSaveFlag()
         for i in range(Start_ind, CorrTime):
             self.path.append("End")
