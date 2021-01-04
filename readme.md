@@ -22,3 +22,10 @@ Starting the simulation:
 
     sudo systemctl start firmwared
     sphinx /opt/parrot-sphinx/usr/share/sphinx/drones/anafi4k.drone::stolen_interface=::simple_front_cam=true
+
+Test the keyboard controller:
+    
+    Start the Sphinx simulation
+    In another terminal, enter the olympe environment
+    cd key_code/control_collectData
+    python keyboard_ctrl.py
