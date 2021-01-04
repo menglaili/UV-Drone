@@ -24,7 +24,7 @@
   		with olympe.Drone("192.168.42.1") as drone: # if simulation, use "10.202.0.1"
   ```
 
-  3. Choose the proper function:  `streaming_example.get_dis_ref()`
+  3. Change the line to `streaming_example.get_dis_ref()`
 
   ```python
   if __name__ == "__main__":
