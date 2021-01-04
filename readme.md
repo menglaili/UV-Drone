@@ -22,6 +22,7 @@ Preparations:
     ```
 
 Starting the simulation:
+
     ```
     sudo systemctl start firmwared
     sphinx /opt/parrot-sphinx/usr/share/sphinx/drones/anafi4k.drone::stolen_interface=::simple_front_cam=true
