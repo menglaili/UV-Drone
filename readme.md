@@ -15,8 +15,8 @@ key_code contains codes for controller, data collection, training, evaluation
 
 Preparations:
 
-    - install rabbitmq server for connecting webcam and the drone: sudo apt-get install rabbitmq-server
-    - install required packages: pip install -r requirements.txt
+    sudo apt-get install rabbitmq-server
+    pip install -r requirements.txt
 
 Starting the simulation:
 
