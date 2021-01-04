@@ -41,10 +41,10 @@ def homo2(pose):
     z0 = pose[2]
     return (1/z0)*Roc.dot(pose)
 
-with open('./camera_extrinst_plot_errorbar/results.pickle', 'rb') as f:
+with open('./results.pickle', 'rb') as f:
     cam_dic = pickle.load(f)
 camera_matrix = cam_dic["intrinsic_matrix"]
-trans_mat = np.load('./camera_extrinst_plot_errorbar/trans_mat_scene1.npy')
+trans_mat = np.load('./trans_mat_scene1.npy')
 def pixel2world(W, point_pixel):
     p1 = tohomo(point_pixel)
     p2 = np.linalg.inv(camera_matrix).dot(p1)

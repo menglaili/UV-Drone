@@ -194,7 +194,7 @@ if __name__ == "__main__":
     import olympe
     from olympe.messages.ardrone3.Piloting import TakeOff, Landing, PCMD
     ctrl_seq = []
-    with olympe.Drone("192.168.42.1") as drone:
+    with olympe.Drone("10.202.0.1") as drone: # "10.202.0.1"  "192.168.42.1"
         drone.connection()
         drone.start_piloting()
         control = KeyboardCtrl()

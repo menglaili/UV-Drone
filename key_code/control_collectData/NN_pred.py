@@ -4,7 +4,7 @@ import torch
 import torch.utils.data as data
 import torchvision as tv
 from data_provider import DroneCRDataset
-from models.NNutils import *
+# from models.NNutils import *
 from utils.cumulative_err import *
 from models.NNmodels import *
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -54,7 +54,7 @@ def NNtrans0(cur_img, ref_img):
 
 
 DroneCorrNet1 = CorrCtrlNet() 
-state_dict = torch.load('./output_model7final.ckpt')
+state_dict = torch.load('./models/output_model7final.ckpt')
 DroneCorrNet1.load_state_dict(state_dict)
 DroneCorrNet1.to(device).eval()
 def NNtrans1(cur_img, ref_img, direction):

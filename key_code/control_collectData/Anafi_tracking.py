@@ -129,7 +129,7 @@ def detect_bgs(frame):
            center = (int(x+0.5*w), int(y+0.5*h))
     return center, frame
 
-with open('./camera_calibration_API/results.pickle', 'rb') as f:
+with open('./results.pickle', 'rb') as f:
     cam_dic = pickle.load(f)
 
 def undistort_img(img):

@@ -94,7 +94,7 @@ def read_orimeta(metadata):
     z = metadata['z']
     return np.array([w,x,y,z])
 
-with open("./camera_calibration_API/camera_mtx.pickle", 'rb') as f:
+with open("./camera_mtx.pickle", 'rb') as f:
     camera_mtx = pickle.load(f)
 camera_mtx = np.linalg.inv(camera_mtx)  #INVERSED
 def find_xyz(center, z):
@@ -247,27 +247,7 @@ class StreamingExample(threading.Thread):
                 finally:
                     yuv_frame.unref()
         cv2.destroyWindow(window_name)
-
-    def hang(self):
-        control = KeyboardCtrl()
-        self.drone.start_piloting()
-        count = 0
-        messthreads = ConsumerThread("localhost")
-        messthreads.start()
-        while not control.quit():
-            if control.takeoff():
-                self.drone(TakeOff())
-            elif control.landing():
-                self.drone(Landing())
-            elif control.has_piloting_cmd():
-                print(self.get_xyzq()[-1]) #  - self.yaw0
-                self.drone.piloting_pcmd(control.roll(), control.pitch(), control.yaw(), control.throttle(), 0.02)
-                time.sleep(0.02)
-                # print("GPS position after take-off : ", self.drone.get_state(PositionChanged))
-            elif control.break_loop():
-                cv2.imwrite(os.path.join(self.datafile, str(count)+'.png'), self.current_frame)
-                count += 1
-            
+	            
     def postprocessing(self):
         if self.recording:
             # Convert the raw .264 file into an .mp4 file
@@ -294,7 +274,10 @@ class StreamingExample(threading.Thread):
 
     def SaveImgPose(self):
         if self.SaveImgFlag:
-            cv2.imwrite(self.pathdic["img"], self.current_frame)
+            if self.current_frame:
+                cv2.imwrite(self.pathdic["img"], self.current_frame)
+            else:
+               print("Current frame not detected")
         if self.SavePoseFlag:
             cur_pose = self.get_pose()
             with open(self.pathdic["pose"], "ab") as f:
@@ -855,7 +838,7 @@ if __name__ == "__main__":
         (0.5, 0), (0.5, 0), (0, np.radians(-90)),\
         (0.5, 0), (0.5, 0), (0.5, 0), (0.5, 0), (0, np.radians(-90)),\
         (0.5, 0), (0.5, 0), (0, np.radians(-90))]
-    with olympe.Drone("192.168.42.1") as drone: # "192.168.42.1" "10.202.0.1"
+    with olympe.Drone("10.202.0.1") as drone: # "192.168.42.1" "10.202.0.1"
         streaming_example = StreamingExample(drone, True, path)
         # streaming_example.dis2pair()
         print(streaming_example.path)
