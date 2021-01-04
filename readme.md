@@ -15,16 +15,10 @@ key_code contains codes for controller, data collection, training, evaluation
 
 Preparations:
 
-    - install rabbitmq server for connecting webcam and the drone: `sudo apt-get install rabbitmq-server`
-    - install required packages:
-    ```
-    pip install -r requirements.txt
-    ```
+    - install rabbitmq server for connecting webcam and the drone: sudo apt-get install rabbitmq-server
+    - install required packages: pip install -r requirements.txt
 
 Starting the simulation:
 
-    ```
     sudo systemctl start firmwared
     sphinx /opt/parrot-sphinx/usr/share/sphinx/drones/anafi4k.drone::stolen_interface=::simple_front_cam=true
-
-    ```
