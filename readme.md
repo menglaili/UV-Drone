@@ -1,5 +1,7 @@
 Modify the function 1 in the video_control_1.0.py. Please use this file to test new output.
 
+The diagram showing logics for Function 1 && Function 2. (Diagram)[https://app.lucidchart.com/lucidchart/invitations/accept/4b268282-3274-40bd-ba9d-e235fa8d106a]
+
 
 key_code contains codes for controller, data collection, training, evaluation
 
