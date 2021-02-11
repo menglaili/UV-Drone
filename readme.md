@@ -1,3 +1,6 @@
+Modify the function 1 in the video_control_1.0.py. Please use this file to test new output.
+
+
 key_code contains codes for controller, data collection, training, evaluation
 
     - control_collectData
